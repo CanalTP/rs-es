@@ -34,16 +34,20 @@ pub struct FilteredFunction {
     pub filter: Option<Query>,
     #[serde(flatten)]
     pub function: Function,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    pub weight: Option<Weight>,
 }
 
 impl FilteredFunction {
-    pub fn build_filtered_function<A: Into<Option<Query>>>(
+    pub fn build_filtered_function<A: Into<Option<Query>>, B: Into<Option<Weight>>>(
         filter: A,
         function: Function,
+        weight: B,
     ) -> FilteredFunction {
         FilteredFunction {
             filter: filter.into(),
-            function,
+            function: function,
+            weight: weight.into(),
         }
     }
 }

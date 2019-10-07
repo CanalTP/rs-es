@@ -455,6 +455,7 @@ mod tests {
                     .with_lang("made_up")
                     .add_param("A", 12)
                     .build(),
+                weight: None,
             })
             .build();
         assert_eq!("{\"function_score\":{\"functions\":[{\"script_score\":{\"lang\":\"made_up\",\"params\":{\"A\":12},\"inline\":\"this_is_a_script\"}}]}}",
