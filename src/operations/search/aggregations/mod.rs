@@ -25,7 +25,7 @@ pub mod metrics;
 use std::collections::HashMap;
 
 use serde::ser::{SerializeMap, Serializer};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use crate::error::EsError;
@@ -151,7 +151,11 @@ fn object_to_result(
         let owned_key = key.to_owned();
         let json = match object.get(&owned_key) {
             Some(json) => json,
-            None => return Err(EsError::EsError(format!("No key: {}", &owned_key))),
+            None => {
+                return Err(EsError::EsError {
+                    details: format!("No key: {}", &owned_key),
+                })
+            }
         };
         ar_map.insert(
             owned_key,
@@ -175,14 +179,20 @@ impl AggregationsResult {
     pub fn get<'a>(&'a self, key: &str) -> Result<&'a AggregationResult, EsError> {
         match self.0.get(key) {
             Some(ref agg_res) => Ok(agg_res),
-            None => Err(EsError::EsError(format!("No agg for key: {}", key))),
+            None => Err(EsError::EsError {
+                details: format!("No agg for key: {}", key),
+            }),
         }
     }
 
     pub fn from(aggs: &Aggregations, json: &Value) -> Result<AggregationsResult, EsError> {
         let object = match json.as_object() {
             Some(o) => o,
-            None => return Err(EsError::EsError("Aggregations is not an object".to_owned())),
+            None => {
+                return Err(EsError::EsError {
+                    details: "Aggregations is not an object".to_owned(),
+                })
+            }
         };
         object_to_result(aggs, object)
     }

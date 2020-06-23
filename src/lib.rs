@@ -42,7 +42,7 @@ pub mod units;
 
 use std::time;
 
-use reqwest::{header::CONTENT_TYPE, RequestBuilder, StatusCode, Url};
+use reqwest::{blocking::RequestBuilder, header::CONTENT_TYPE, StatusCode, Url};
 
 use serde::{de::DeserializeOwned, ser::Serialize};
 
@@ -55,7 +55,7 @@ pub trait EsResponse {
         R: DeserializeOwned;
 }
 
-impl EsResponse for reqwest::Response {
+impl EsResponse for reqwest::blocking::Response {
     fn status_code(&self) -> StatusCode {
         self.status()
     }
@@ -76,7 +76,7 @@ impl EsResponse for reqwest::Response {
 ///
 /// This function is exposed to allow extensions to certain operations, it is
 /// not expected to be used by consumers of the library
-fn do_req(resp: reqwest::Response) -> Result<reqwest::Response, EsError> {
+fn do_req(resp: reqwest::blocking::Response) -> Result<reqwest::blocking::Response, EsError> {
     let mut resp = resp;
     let status = resp.status();
     match status {
@@ -111,7 +111,7 @@ fn do_req(resp: reqwest::Response) -> Result<reqwest::Response, EsError> {
 #[derive(Debug, Clone)]
 pub struct Client {
     base_url: Url,
-    http_client: reqwest::Client,
+    http_client: reqwest::blocking::Client,
 }
 
 impl Client {
@@ -119,7 +119,7 @@ impl Client {
         &self,
         url: &str,
         action: impl FnOnce(Url) -> RequestBuilder,
-    ) -> Result<reqwest::Response, EsError> {
+    ) -> Result<reqwest::blocking::Response, EsError> {
         let url = self.full_url(url);
         let username = self.base_url.username();
         let mut method = action(url);
@@ -134,11 +134,11 @@ impl Client {
 /// Create a HTTP function for the given method (GET/PUT/POST/DELETE)
 macro_rules! es_op {
     ($n:ident,$cn:ident) => {
-        fn $n(&self, url: &str) -> Result<reqwest::Response, EsError> {
+        fn $n(&self, url: &str) -> Result<reqwest::blocking::Response, EsError> {
             log::info!("Doing {} on {}", stringify!($n), url);
             self.do_es_op(url, |url| self.http_client.$cn(url.clone()))
         }
-    }
+    };
 }
 
 /// Create a HTTP function with a request body for the given method
@@ -146,9 +146,10 @@ macro_rules! es_op {
 ///
 macro_rules! es_body_op {
     ($n:ident,$cn:ident) => {
-        fn $n<E>(&mut self, url: &str, body: &E) -> Result<reqwest::Response, EsError>
-            where E: Serialize {
-
+        fn $n<E>(&mut self, url: &str, body: &E) -> Result<reqwest::blocking::Response, EsError>
+        where
+            E: Serialize,
+        {
             log::info!("Doing {} on {}", stringify!($n), url);
             let json_string = serde_json::to_string(body)?;
             log::debug!("With body: {}", &json_string);
@@ -157,16 +158,16 @@ macro_rules! es_body_op {
                 self.http_client.$cn(url.clone()).body(json_string)
             })
         }
-    }
+    };
 }
 
 impl Client {
     /// Create a new client
-    pub fn init(url_s: &str) -> Result<Client, reqwest::UrlError> {
+    pub fn init(url_s: &str) -> Result<Client, EsError> {
         let url = Url::parse(url_s)?;
 
         Ok(Client {
-            http_client: reqwest::Client::new(),
+            http_client: reqwest::blocking::Client::new(),
             base_url: url,
         })
     }
@@ -176,11 +177,11 @@ impl Client {
     pub fn init_with_timeout(
         url_s: &str,
         timeout: Option<time::Duration>,
-    ) -> Result<Client, reqwest::UrlError> {
+    ) -> Result<Client, EsError> {
         let url = Url::parse(url_s)?;
 
         Ok(Client {
-            http_client: reqwest::Client::builder()
+            http_client: reqwest::blocking::Client::builder()
                 .timeout(timeout)
                 .build()
                 .expect("Failed to build client"),
@@ -209,10 +210,7 @@ pub mod tests {
 
     use serde::{Deserialize, Serialize};
 
-    use super::{
-        Client,
-        error::EsError,
-    };
+    use super::{error::EsError, Client};
 
     // test setup
 
@@ -283,9 +281,11 @@ pub mod tests {
     pub fn clean_db(client: &mut Client, test_idx: &str) {
         match client.delete_index(test_idx) {
             // Ignore indices which don't exist yet
-            Err(EsError::EsError(ref msg)) if msg == "Unexpected status: 404 Not Found" => {},
-            Ok(_) => {},
-            e => { e.expect(&format!("Failed to clean db for index {:?}", test_idx)); },
+            Err(EsError::EsError { details }) if details == "Unexpected status: 404 Not Found" => {}
+            Ok(_) => {}
+            e => {
+                e.expect(&format!("Failed to clean db for index {:?}", test_idx));
+            }
         };
     }
 }

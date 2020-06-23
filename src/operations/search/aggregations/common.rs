@@ -89,7 +89,7 @@ macro_rules! add_extra_option {
             self.0.extra.$e = Some(val.into());
             self
         }
-    }
+    };
 }
 
 impl<'a, E> Serialize for Agg<'a, E>
@@ -122,14 +122,16 @@ macro_rules! agg_as {
     ($n:ident,$st:ident,$tp:ident,$t:ident,$rt:ty) => {
         pub fn $n(&self) -> Result<&$rt, EsError> {
             match self {
-                AggregationResult::$st(ref res) => {
-                    match res {
-                        $tp::$t(ref res) => Ok(res),
-                        _ => Err(EsError::EsError(format!("Wrong type: {:?}", self)))
-                    }
+                AggregationResult::$st(ref res) => match res {
+                    $tp::$t(ref res) => Ok(res),
+                    _ => Err(EsError::EsError {
+                        details: format!("Wrong type: {:?}", self),
+                    }),
                 },
-                _ => Err(EsError::EsError(format!("Wrong type: {:?}", self)))
+                _ => Err(EsError::EsError {
+                    details: format!("Wrong type: {:?}", self),
+                }),
             }
         }
-    }
+    };
 }

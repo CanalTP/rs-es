@@ -20,7 +20,7 @@ use std::{borrow::ToOwned, collections::HashMap, marker::PhantomData};
 
 use serde::{
     ser::{SerializeMap, Serializer},
-    Serialize, Deserialize,
+    Deserialize, Serialize,
 };
 use serde_json::Value;
 
@@ -840,12 +840,12 @@ macro_rules! add_aggs_ref {
         pub fn aggs_ref(&self) -> Option<&AggregationsResult> {
             self.aggs.as_ref()
         }
-    }
+    };
 }
 
 macro_rules! return_error {
     ($e:expr) => {
-        return Err(EsError::EsError($e));
+        return Err(EsError::EsError { details: $e });
     };
 }
 
