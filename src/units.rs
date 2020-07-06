@@ -422,7 +422,11 @@ impl JsonVal {
             String(ref string) => JsonVal::String(string.clone()),
             Bool(b) => JsonVal::Boolean(*b),
             Number(ref i) => JsonVal::Number(i.clone()),
-            _ => return Err(EsError::EsError(format!("Not a JsonVal: {:?}", from))),
+            _ => {
+                return Err(EsError::EsError {
+                    details: format!("Not a JsonVal: {:?}", from),
+                })
+            }
         })
     }
 }

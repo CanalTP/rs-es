@@ -130,10 +130,9 @@ impl Client {
 
         match response.status_code() {
             StatusCode::OK => Ok(response.read_response()?),
-            status_code => Err(EsError::EsError(format!(
-                "Unexpected status: {}",
-                status_code
-            ))),
+            status_code => Err(EsError::EsError {
+                details: format!("Unexpected status: {}", status_code),
+            }),
         }
     }
 
@@ -144,10 +143,9 @@ impl Client {
 
         match response.status_code() {
             StatusCode::OK => Ok(response.read_response()?),
-            status_code => Err(EsError::EsError(format!(
-                "Unexpected status: {}",
-                status_code
-            ))),
+            status_code => Err(EsError::EsError {
+                details: format!("Unexpected status: {}", status_code),
+            }),
         }
     }
 
@@ -166,10 +164,9 @@ impl Client {
 
         match response.status_code() {
             StatusCode::OK => Ok(()),
-            status_code => Err(EsError::EsError(format!(
-                "Unexpected status: {}",
-                status_code
-            ))),
+            status_code => Err(EsError::EsError {
+                details: format!("Unexpected status: {}", status_code),
+            }),
         }
     }
 }
@@ -242,11 +239,10 @@ pub mod tests {
                 .as_object()
                 .expect("by construction 'char_filter' should be a map")
                 .clone(),
-                tokenizer: serde_json::json! ({
-                })
-                .as_object()
-                .expect("by construction 'empty tokenizer' should be a map")
-                .clone(),
+                tokenizer: serde_json::json!({})
+                    .as_object()
+                    .expect("by construction 'empty tokenizer' should be a map")
+                    .clone(),
             },
         };
 

@@ -20,9 +20,7 @@ use serde::{Serialize, Serializer};
 
 use crate::{json::ShouldSkip, units::OneOrMany};
 
-use super::{
-    functions::FilteredFunction, functions::Function, MinimumShouldMatch, Query, ScoreMode,
-};
+use super::{functions::FilteredFunction, MinimumShouldMatch, Query, ScoreMode};
 
 /// BoostMode
 #[derive(Debug, Copy, Clone)]

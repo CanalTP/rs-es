@@ -16,99 +16,60 @@
 
 //! Errors and error conversion code for the `rs_es` crate
 
-use std::error::Error;
-use std::fmt;
-use std::io::{self, Read};
-
-use serde_json;
-
-// Error handling
+use std::io::Read;
+use thiserror::Error;
 
 /// Error that can occur include IO and parsing errors, as well as specific
 /// errors from the ElasticSearch server and logic errors from this library
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum EsError {
     /// An internal error from this library
-    EsError(String),
+    #[error("RS ES Internal Error: {details:?}")]
+    EsError { details: String },
 
     /// An error reported in a JSON response from the ElasticSearch server
-    EsServerError(String),
+    #[error("Elasticsearch Error: {details:?}")]
+    EsServerError { details: String },
 
     /// Miscellaneous error from the HTTP library
-    HttpError(reqwest::Error),
+    #[error("HTTP Error")]
+    HttpError {
+        #[from]
+        source: reqwest::Error,
+    },
 
     /// Miscellaneous IO error
-    IoError(io::Error),
+    #[error("IO Error")]
+    IoError {
+        #[from]
+        source: std::io::Error,
+    },
 
     /// JSON error
-    JsonError(serde_json::error::Error),
+    #[error("JSON Error")]
+    JsonError {
+        #[from]
+        source: serde_json::error::Error,
+    },
+
+    /// URL error
+    #[error("URL Error")]
+    URLError {
+        #[from]
+        source: url::ParseError,
+    },
 }
 
-impl From<io::Error> for EsError {
-    fn from(err: io::Error) -> EsError {
-        EsError::IoError(err)
-    }
-}
-
-impl From<reqwest::Error> for EsError {
-    fn from(err: reqwest::Error) -> EsError {
-        EsError::HttpError(err)
-    }
-}
-
-impl From<serde_json::error::Error> for EsError {
-    fn from(err: serde_json::error::Error) -> EsError {
-        EsError::JsonError(err)
-    }
-}
-
-impl<'a> From<&'a mut reqwest::Response> for EsError {
-    fn from(err: &'a mut reqwest::Response) -> EsError {
-        let mut body = String::new();
-        match err.read_to_string(&mut body) {
-            Ok(_) => (),
-            Err(_) => {
-                return EsError::EsServerError(format!(
-                    "{} - cannot read response - {:?}",
-                    err.status(),
-                    err
-                ));
-            }
-        }
-        EsError::EsServerError(format!("{} - {}", err.status(), body))
-    }
-}
-
-impl Error for EsError {
-    fn description(&self) -> &str {
-        match *self {
-            EsError::EsError(ref err) => err,
-            EsError::EsServerError(ref err) => err,
-            EsError::HttpError(ref err) => err.description(),
-            EsError::IoError(ref err) => err.description(),
-            EsError::JsonError(ref err) => err.description(),
-        }
-    }
-
-    fn cause(&self) -> Option<&Error> {
-        match *self {
-            EsError::EsError(_) => None,
-            EsError::EsServerError(_) => None,
-            EsError::HttpError(ref err) => Some(err as &Error),
-            EsError::IoError(ref err) => Some(err as &Error),
-            EsError::JsonError(ref err) => Some(err as &Error),
-        }
-    }
-}
-
-impl fmt::Display for EsError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            EsError::EsError(ref s) => fmt::Display::fmt(s, f),
-            EsError::EsServerError(ref s) => fmt::Display::fmt(s, f),
-            EsError::HttpError(ref err) => fmt::Display::fmt(err, f),
-            EsError::IoError(ref err) => fmt::Display::fmt(err, f),
-            EsError::JsonError(ref err) => fmt::Display::fmt(err, f),
+impl<'a> From<&'a mut reqwest::blocking::Response> for EsError {
+    fn from(err: &'a mut reqwest::blocking::Response) -> EsError {
+        let mut buffer = String::new();
+        match err.read_to_string(&mut buffer) {
+            Ok(_) => EsError::EsServerError {
+                details: format!("{} - {}", err.status(), buffer),
+            },
+            Err(_) => EsError::EsServerError {
+                details: format!("{} - cannot read response - {:?}", err.status(), err),
+            },
         }
     }
 }

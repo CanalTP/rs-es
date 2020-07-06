@@ -510,10 +510,9 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
                 let interim: SearchResultInterim<T> = response.read_response()?;
                 Ok(interim.finalize())
             }
-            status_code => Err(EsError::EsError(format!(
-                "Unexpected status: {}",
-                status_code
-            ))),
+            status_code => Err(EsError::EsError {
+                details: format!("Unexpected status: {}", status_code),
+            }),
         }
     }
 }
@@ -772,9 +771,9 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
                         let req_aggs = match &self.body.aggs {
                             Some(ref aggs) => aggs,
                             None => {
-                                return Err(EsError::EsError(
-                                    "No aggs despite being in results".to_owned(),
-                                ));
+                                return Err(EsError::EsError {
+                                    details: "No aggs despite being in results".to_owned(),
+                                });
                             }
                         };
                         Some(AggregationsResult::from(req_aggs, raw_aggs)?)
@@ -785,10 +784,9 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
                 result.aggs = aggs;
                 Ok(result)
             }
-            status_code => Err(EsError::EsError(format!(
-                "Unexpected status: {}",
-                status_code
-            ))),
+            status_code => Err(EsError::EsError {
+                details: format!("Unexpected status: {}", status_code),
+            }),
         }
     }
 
@@ -829,9 +827,9 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
                         let req_aggs = match &self.body.aggs {
                             Some(ref aggs) => aggs,
                             None => {
-                                return Err(EsError::EsError(
-                                    "No aggs despite being in results".to_owned(),
-                                ));
+                                return Err(EsError::EsError {
+                                    details: "No aggs despite being in results".to_owned(),
+                                });
                             }
                         };
                         Some(AggregationsResult::from(req_aggs, raw_aggs)?)
@@ -842,13 +840,12 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
                 result.aggs = aggs;
                 Ok(result)
             }
-            StatusCode::NOT_FOUND => {
-                Err(EsError::EsServerError(format!("Not found: {:?}", response)))
-            }
-            status_code => Err(EsError::EsError(format!(
-                "Unexpected status: {}",
-                status_code
-            ))),
+            StatusCode::NOT_FOUND => Err(EsError::EsServerError {
+                details: format!("Not found: {:?}", response),
+            }),
+            status_code => Err(EsError::EsError {
+                details: format!("Unexpected status: {}", status_code),
+            }),
         }
     }
 }
@@ -1087,7 +1084,7 @@ where
     }
 }
 
-#[derive(Debug, Deserialize )]
+#[derive(Debug, Deserialize)]
 pub struct ScanResult<T> {
     pub scroll_id: String,
     pub took: u64,
@@ -1132,15 +1129,18 @@ where
                 let search_result: SearchResultInterim<T> = response.read_response()?;
                 self.scroll_id = match search_result.scroll_id {
                     Some(ref id) => id.clone(),
-                    None => return Err(EsError::EsError("Expecting scroll_id".to_owned())),
+                    None => {
+                        return Err(EsError::EsError {
+                            details: "Expecting scroll_id".to_owned(),
+                        })
+                    }
                 };
                 log::debug!("Scrolled: {:?}", search_result);
                 Ok(search_result.finalize())
             }
-            status_code => Err(EsError::EsError(format!(
-                "Unexpected status: {}",
-                status_code
-            ))),
+            status_code => Err(EsError::EsError {
+                details: format!("Unexpected status: {}", status_code),
+            }),
         }
     }
 
@@ -1151,10 +1151,9 @@ where
         match response.status_code() {
             StatusCode::OK => Ok(()),        // closed
             StatusCode::NOT_FOUND => Ok(()), // previously closed
-            status_code => Err(EsError::EsError(format!(
-                "Unexpected status: {}",
-                status_code
-            ))),
+            status_code => Err(EsError::EsError {
+                details: format!("Unexpected status: {}", status_code),
+            }),
         }
     }
 }
@@ -1249,7 +1248,6 @@ mod tests {
         #[cfg(not(feature = "es5"))]
         assert_eq!(1, limited_fields.hits.total);
         // TODO - add assertion for document contents
-
     }
 
     #[test]
@@ -1304,7 +1302,6 @@ mod tests {
 
         scan_result.close(&mut client).unwrap();
     }
-
 
     #[test]
     #[cfg(feature = "es5")]
@@ -1513,7 +1510,10 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(feature = "es5", ignore(message = "need to fix mappings to not be text fields"))]
+    #[cfg_attr(
+        feature = "es5",
+        ignore(message = "need to fix mappings to not be text fields")
+    )]
     fn test_highlight() {
         let mut client = make_client();
         let index_name = "test_highlight";
@@ -1564,7 +1564,10 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(feature = "es5", ignore(message = "need to fix mappings to not be text fields"))]
+    #[cfg_attr(
+        feature = "es5",
+        ignore(message = "need to fix mappings to not be text fields")
+    )]
     fn test_bucket_aggs() {
         let mut client = make_client();
         let index_name = "test_bucket_aggs";
@@ -1686,7 +1689,10 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(feature = "es5", ignore(message = "need to fix mappings to not be text fields"))]
+    #[cfg_attr(
+        feature = "es5",
+        ignore(message = "need to fix mappings to not be text fields")
+    )]
     fn test_sort() {
         let mut client = make_client();
         let index_name = "test_sort";

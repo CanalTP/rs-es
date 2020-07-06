@@ -74,10 +74,9 @@ impl<'a, 'b> DeleteOperation<'a, 'b> {
         let response = self.client.delete_op(&url)?;
         match response.status_code() {
             StatusCode::OK => Ok(response.read_response()?),
-            status_code => Err(EsError::EsError(format!(
-                "Unexpected status: {}",
-                status_code
-            ))),
+            status_code => Err(EsError::EsError {
+                details: format!("Unexpected status: {}", status_code),
+            }),
         }
     }
 }
