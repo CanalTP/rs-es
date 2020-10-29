@@ -96,5 +96,4 @@ pub struct CauseError {
     #[serde(rename = "type")]
     pub cause_type: String,
     pub reason: String,
-    pub failed: u64,
 }
