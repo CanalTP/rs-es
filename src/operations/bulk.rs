@@ -36,7 +36,7 @@ use crate::{
 
 use super::{
     common::{OptionVal, Options, VersionType},
-    ShardCountResult,
+    ActionError, ShardCountResult,
 };
 
 #[derive(Debug)]
@@ -338,6 +338,7 @@ pub struct ActionResultInner {
     #[serde(rename = "_shards")]
     pub shards: Option<ShardCountResult>,
     pub found: Option<bool>,
+    pub error: Option<ActionError>,
 }
 
 /// The result of a bulk operation

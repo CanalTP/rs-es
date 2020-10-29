@@ -22,7 +22,7 @@
 
 use std::borrow::Cow;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::util::StrJoin;
 
@@ -78,4 +78,23 @@ pub struct ShardCountResult {
 #[derive(Debug, Deserialize)]
 pub struct GenericResult {
     pub acknowledged: bool,
+}
+
+/// Information about an error that occured in a bulk operation
+/// See https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ActionError {
+    #[serde(rename = "type")]
+    pub error_type: String,
+    pub reason: String,
+    #[serde(rename = "cause_by")]
+    pub cause: Option<CauseError>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CauseError {
+    #[serde(rename = "type")]
+    pub cause_type: String,
+    pub reason: String,
+    pub failed: u64,
 }
