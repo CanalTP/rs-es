@@ -87,7 +87,7 @@ pub struct ActionError {
     #[serde(rename = "type")]
     pub error_type: String,
     pub reason: String,
-    #[serde(rename = "cause_by")]
+    #[serde(rename = "caused_by")]
     pub cause: Option<CauseError>,
 }
 
