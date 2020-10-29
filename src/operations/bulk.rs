@@ -328,6 +328,8 @@ impl<'de> Deserialize<'de> for ActionResult {
 
 #[derive(Debug, serde::Deserialize)]
 pub struct ActionResultInner {
+    #[serde(rename = "_id")]
+    pub id: String,
     #[serde(rename = "_index")]
     pub index: String,
     #[serde(rename = "_type")]
