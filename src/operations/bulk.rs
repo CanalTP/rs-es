@@ -36,7 +36,7 @@ use crate::{
 
 use super::{
     common::{OptionVal, Options, VersionType},
-    ShardCountResult,
+    ActionError, ShardCountResult,
 };
 
 #[derive(Debug)]
@@ -328,16 +328,19 @@ impl<'de> Deserialize<'de> for ActionResult {
 
 #[derive(Debug, serde::Deserialize)]
 pub struct ActionResultInner {
+    #[serde(rename = "_id")]
+    pub id: String,
     #[serde(rename = "_index")]
     pub index: String,
     #[serde(rename = "_type")]
     pub doc_type: String,
     #[serde(rename = "_version")]
-    pub version: u64,
+    pub version: Option<u64>,
     pub status: u64,
     #[serde(rename = "_shards")]
-    pub shards: ShardCountResult,
+    pub shards: Option<ShardCountResult>,
     pub found: Option<bool>,
+    pub error: Option<ActionError>,
 }
 
 /// The result of a bulk operation
